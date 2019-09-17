@@ -1,0 +1,80 @@
+version: '3.4'
+
+x-commonenvironment: &commonenvironment
+  IMPORT_THREADS: 2
+  MYSQL_DATABASE: my_wiki
+  MYSQL_USER: wikiuser
+  MYSQL_PASSWORD: example
+  MYSQL_ROOT_PASSWORD: my-secret-pw
+
+x-commonargs: &commonargs
+  PGID: ${PGID-1000}
+  PUID: ${PUID-1000}
+  USER: ${USER}
+
+services:
+  mediawiki:
+    build:
+      context: ./mediawiki
+      args: *commonargs
+    ports:
+      - 80:80
+    links:
+      - db
+    environment:
+      << : *commonenvironment
+      WIKI_BRANCH: REL1_33
+      WIKI_LANG: ${WIKI_LANG-ja}
+      WIKI_HOST: ${WIKI_HOST-localhost}
+      WIKI_ADMIN_USER: mywikiadmin
+      WIKI_ADMIN_PASSWORD: mywikipass
+    volumes:
+      - mediawiki_html:/var/www/html
+      - ./import:/import
+      - ./mediawiki/docker-php-entrypoint:/usr/local/bin/docker-php-entrypoint
+    networks:
+      mediawiki_net:
+        ipv4_address: 172.16.238.10
+    extra_hosts:
+      - ${WIKI_HOST-localhost}:172.16.238.10
+
+  db:
+    image: mariadb
+    ports:
+      - 3306:3306
+    environment: *commonenvironment
+    volumes:
+      - ./mariadb/data:/var/lib/mysql
+      - ./mariadb/conf.d:/etc/mysql/conf.d
+    networks:
+      mediawiki_net:
+        ipv4_address: 172.16.238.20
+
+  mwdumper:
+    build:
+      context: ./mwdumper
+      args: *commonargs
+    links:
+      - db
+    environment:
+      << : *commonenvironment
+      WIKI_LANG: ${WIKI_LANG-ja}
+    volumes:
+      - ./import:/import
+    stdin_open: true
+    tty: true
+    user: ${PUID-1000}:${PGID-1000}
+    networks:
+      mediawiki_net:
+        ipv4_address: 172.16.238.30
+
+networks:
+  mediawiki_net:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.16.238.0/24
+
+volumes:
+  mediawiki_html:

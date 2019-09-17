@@ -1,0 +1,77 @@
+#!/bin/sh
+set -Ceu
+
+if [ -z "${WIKI_LANG+x}" ] ; then
+	echo "env empty error WIKI_LANG"
+	exit 1
+fi
+
+# add init process
+FILE="LocalSettings.php"
+if [ ! -e ${FILE} ];then
+
+	# install extension
+	# Scribunto
+	git clone --depth 1 -b ${WIKI_BRANCH} \
+      https://gerrit.wikimedia.org/r/mediawiki/extensions/Scribunto \
+      /var/www/html/extensions/Scribunto
+    chmod a+x /var/www/html/extensions/Scribunto/includes/engines/LuaStandalone/binaries/lua*_linux_*/lua
+
+	# MassMessage
+	git clone --depth 1 -b ${WIKI_BRANCH} \
+      https://gerrit.wikimedia.org/r/mediawiki/extensions/MassMessage \
+      /var/www/html/extensions/MassMessage
+
+	# TemplateStyles
+	git clone --depth 1 -b ${WIKI_BRANCH} \
+      https://gerrit.wikimedia.org/r/mediawiki/extensions/TemplateStyles \
+      /var/www/html/extensions/TemplateStyles
+
+	# LabeledSectionTransclusion
+	git clone --depth 1 -b ${WIKI_BRANCH} \
+      https://gerrit.wikimedia.org/r/mediawiki/extensions/LabeledSectionTransclusion \
+      /var/www/html/extensions/LabeledSectionTransclusion
+
+	# Disambiguator
+	git clone --depth 1 -b ${WIKI_BRANCH} \
+      https://gerrit.wikimedia.org/r/mediawiki/extensions/Disambiguator \
+      /var/www/html/extensions/Disambiguator
+
+	# Disambiguator
+	git clone --depth 1 -b ${WIKI_BRANCH} \
+      https://gerrit.wikimedia.org/r/mediawiki/extensions/GeoData \
+      /var/www/html/extensions/GeoData
+
+	# Disambiguator
+	git clone --depth 1 -b ${WIKI_BRANCH} \
+      https://gerrit.wikimedia.org/r/mediawiki/extensions/Math \
+      /var/www/html/extensions/Math
+
+	# wait(db init)
+	echo "run install.php after20s"
+	sleep 20
+
+	# install mediawiki 
+	php /var/www/html/maintenance/install.php --server="http://${WIKI_HOST}" --dbname=${MYSQL_DATABASE} --dbserver="db" --installdbuser=${MYSQL_USER} --installdbpass=${MYSQL_PASSWORD} --dbuser=${MYSQL_USER} --dbpass=${MYSQL_PASSWORD} --lang=${WIKI_LANG} --pass=${WIKI_ADMIN_PASSWORD} --scriptpath="" "Wikipedia Local" "${WIKI_ADMIN_USER}"
+	#echo '$wgActorTableSchemaMigrationStage = 0x30;' >> ${FILE}
+	#echo '$wgMultiContentRevisionSchemaMigrationStage = 0x30;' >> ${FILE}
+	echo "wfLoadExtension( 'Scribunto' );" >> ${FILE}
+	echo "\$wgScribuntoDefaultEngine = 'luastandalone';" >> ${FILE}
+	echo "wfLoadExtension( 'MassMessage' );" >> ${FILE}
+	echo "wfLoadExtension( 'TemplateStyles' );" >> ${FILE}
+	echo "wfLoadExtension( 'Cite' );" >> ${FILE}
+	echo "wfLoadExtension( 'CiteThisPage' );" >> ${FILE}
+	echo "wfLoadExtension( 'ParserFunctions' );" >> ${FILE}
+	echo "wfLoadExtension( 'LabeledSectionTransclusion' );" >> ${FILE}
+	echo "wfLoadExtension( 'Disambiguator' );" >> ${FILE}
+	echo "wfLoadExtension( 'CategoryTree' );" >> ${FILE}
+	echo "wfLoadExtension( 'GeoData' );" >> ${FILE}
+	echo "wfLoadExtension( 'Math' );" >> ${FILE}
+fi
+
+# first arg is `-f` or `--some-option`
+if [ "${1#-}" != "$1" ]; then
+	set -- apache2-foreground "$@"
+fi
+
+exec "$@"
