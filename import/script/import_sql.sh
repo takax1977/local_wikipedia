@@ -22,7 +22,7 @@ echo "=== csv import end ${SECONDS}s ==="
 echo "=== xml import start ==="
 SECONDS=0
 echo " import xml"
-ls ${DATA_PATH}/*-latest-pages-articles*.xml-*.bz2 -Sr | parallel -j${IMPORT_THREADS} "bzip2 -dc {} | php importdump.php --no-updates"
+ls ${DATA_PATH}/*-latest-pages-articles*.xml-*.bz2 -Sr | parallel -j${IMPORT_THREADS} "bzip2 -dc {} | php /var/www/html/maintenance/importDump.php --no-updates"
 echo "=== xml import end ${SECONDS}s ==="
 
 echo 'SET GLOBAL innodb_flush_log_at_trx_commit = 1' | mysql -h db -uroot -p${MYSQL_ROOT_PASSWORD}
