@@ -16,7 +16,7 @@ echo 'SET GLOBAL innodb_flush_log_at_trx_commit = 2' | mysql -h db -uroot -p${MY
 
 echo "=== csv import start ==="
 SECONDS=0
-ls ${DATA_PATH}/*.sql.gz -Sr | parallel -j${IMPORT_THREADS} --progress "cat ${BASE_PATH}/script/tran_start.sql <(zcat {}) <(cat ${BASE_PATH}/script/tran_end.sql) | mysql -h db -u${MYSQL_USER} -p${MYSQL_PASSWORD} -D ${MYSQL_DATABASE}"
+ls ${DATA_PATH}/*.sql.gz -Sr | grep -v "page.sql.gz" | parallel -j${IMPORT_THREADS} --progress "cat ${BASE_PATH}/script/tran_start.sql <(zcat {}) <(cat ${BASE_PATH}/script/tran_end.sql) | mysql -h db -u${MYSQL_USER} -p${MYSQL_PASSWORD} -D ${MYSQL_DATABASE}"
 echo "=== csv import end ${SECONDS}s ==="
 
 echo "=== xml import start ==="
